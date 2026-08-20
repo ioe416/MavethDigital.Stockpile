@@ -1,6 +1,8 @@
 using FluentAssertions;
+using MavethDigital.Forge.Core.ValueObjects;
 using Stockpile.Domain.Purchasing.Enums;
 using Stockpile.Domain.Purchasing.Models;
+using System.Diagnostics;
 
 
 namespace Stockpile.Domain.Tests.Purchasing.Models;
@@ -34,7 +36,7 @@ public sealed class PurchaseTest
         act.Should().Throw<ArgumentException>()
             .WithParameterName("vendorId")
             .WithMessage("A vendor is required.*");
-            
+
     }
 
     [Fact]
@@ -205,14 +207,14 @@ public sealed class PurchaseTest
 
     }
 
-    [Fact] 
+    [Fact]
     public void Purchase_order_number_is_normalized_before_storage()
     {
         var createdAt = DateTimeOffset.UtcNow;
 
         var purchase = new Purchase(
             Guid.NewGuid(),
-            Guid.NewGuid(), 
+            Guid.NewGuid(),
             Guid.NewGuid(),
             createdAt);
 
@@ -269,6 +271,83 @@ public sealed class PurchaseTest
 
         purchase.Status.Should().Be(PurchaseStatus.Requested);
         purchase.PurchaseOrderNumber.Should().BeNull();
+
+    }
+
+    [Fact]
+    public void Purchase_should_accept_purchase_line()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var currencyCode = new CurrencyCode("USD");
+        var unitPrice = new Money(1.25m, currencyCode);
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt);
+
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            1,
+            createdAt.AddMinutes(1),
+            unitPrice);
+
+        purchase.AddLine(createdAt.AddMinutes(1), line);
+
+        purchase.Lines.Should().HaveCount(1);
+        purchase.Lines.Should().Contain(line);
+
+    }
+
+    [Fact]
+    public void Adding_line_should_update_purchase_updated_at()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var currencyCode = new CurrencyCode("USD");
+        var unitPrice = new Money(1.25m, currencyCode);
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt);
+
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            1,
+            createdAt.AddMinutes(1),
+            unitPrice);
+
+        purchase.AddLine(createdAt.AddMinutes(1), line);
+
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(1));
+
+    }
+
+    [Fact]
+    public void Adding_line_timestamped_before_purchase_last_update_timestamp_should_fail()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var currencyCode = new CurrencyCode("USD");
+        var unitPrice = new Money(1.25m, currencyCode);
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt);
+
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            1,
+            createdAt.AddMinutes(1),
+            unitPrice);
+
+        purchase.AddLine(createdAt.AddMinutes(-1), line);
+
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(-1));
+        purchase.Lines.Should().NotContain(line);
 
     }
 }

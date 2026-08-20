@@ -5,6 +5,7 @@ namespace Stockpile.Domain.Purchasing.Models;
 
 public sealed class Purchase : AggregateRoot
 {
+    private readonly List<PurchaseLine> _lines = [];
     public Guid VendorId { get; }
     
     public Guid DepartmentId { get; }
@@ -15,9 +16,11 @@ public sealed class Purchase : AggregateRoot
 
     public string? PurchaseOrderNumber { get; private set; }
 
+    public IReadOnlyCollection<PurchaseLine> Lines => _lines;
+
     public Purchase(Guid vendorId, 
         Guid departmentId, 
-        Guid requestedByEmployeeId, 
+        Guid requestedByEmployeeId,
         DateTimeOffset createdAt,
         string? purchaseOrderNumber = null) 
         : base (createdAt)
@@ -61,5 +64,13 @@ public sealed class Purchase : AggregateRoot
 
         PurchaseOrderNumber = poNumber.Trim();
         Status = PurchaseStatus.Ordered;
+    }
+
+    public void AddLine(DateTimeOffset updatedAt, PurchaseLine line)
+    {
+        base.MarkUpdated(updatedAt);
+
+        _lines.Add(line);
+        
     }
 }
