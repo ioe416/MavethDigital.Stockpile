@@ -1,12 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Forge\MavethDigital.Forge.Domain\MavethDigital.Forge.Domain.csproj" />
-    <ProjectReference Include="..\..\..\Forge\MavethDigital.Forge.Core\MavethDigital.Forge.Core.csproj" />
+    <Compile Remove="Models\**" />
+    <EmbeddedResource Remove="Models\**" />
+    <None Remove="Models\**" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Models\" />
+    <ProjectReference Include="..\..\..\Forge\MavethDigital.Forge.Core\MavethDigital.Forge.Core.csproj" />
+    <ProjectReference Include="..\..\..\Forge\MavethDigital.Forge.Domain\MavethDigital.Forge.Domain.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
