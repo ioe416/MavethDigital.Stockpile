@@ -50,15 +50,16 @@ public sealed class Purchase : AggregateRoot
 
     public void Order(DateTimeOffset orderedAt, string poNumber)
     {
+
         if (Status != PurchaseStatus.Requested)
             throw new InvalidOperationException("Only requested purchases can be ordered.");
 
         if (string.IsNullOrWhiteSpace(poNumber))
             throw new ArgumentException("A purchase order number is required.", nameof(poNumber));
 
-        PurchaseOrderNumber = poNumber;
-
         base.MarkUpdated(orderedAt);
+
+        PurchaseOrderNumber = poNumber.Trim();
         Status = PurchaseStatus.Ordered;
     }
 }

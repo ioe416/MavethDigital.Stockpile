@@ -185,6 +185,49 @@ public sealed class PurchaseTest
     }
 
     [Fact]
+    public void Whitespace_only_purchaseOrder_number_should_be_rejected()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt);
+
+        purchase.Submit(createdAt.AddMinutes(1));
+
+        Action act = () => purchase.Order(createdAt.AddMinutes(2), "   ");
+
+        act.Should().Throw<ArgumentException>()
+            .WithMessage("A purchase order number is required.*")
+            .WithParameterName("poNumber");
+
+    }
+
+    [Fact] 
+    public void Purchase_order_number_is_normalized_before_storage()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(), 
+            Guid.NewGuid(),
+            createdAt);
+
+        purchase.Submit(createdAt.AddMinutes(1));
+
+        var orderedAt = createdAt.AddMinutes(2);
+
+        purchase.Order(orderedAt, "   123456   ");
+
+        purchase.Status.Should().Be(PurchaseStatus.Ordered);
+        purchase.PurchaseOrderNumber.Should().Be("123456");
+        purchase.UpdatedAt.Should().Be(orderedAt);
+    }
+
+    [Fact]
     public void OrderedAt_before_current_updatedAt_should_be_rejected()
     {
         var createdAt = DateTimeOffset.UtcNow;
@@ -202,6 +245,30 @@ public sealed class PurchaseTest
         act.Should().Throw<ArgumentOutOfRangeException>()
             .WithMessage(
                 "The changed timestamp cannot precede the current updated timestamp.*");
+
+    }
+
+    [Fact]
+    public void When_orderedAt_invalid_order_should_fail_and_remain_requested()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt);
+
+        purchase.Submit(createdAt.AddMinutes(2));
+
+        Action act = () => purchase.Order(createdAt.AddMinutes(-3), "123456");
+
+        act.Should().Throw<ArgumentOutOfRangeException>()
+            .WithMessage(
+                "The changed timestamp cannot precede the current updated timestamp.*");
+
+        purchase.Status.Should().Be(PurchaseStatus.Requested);
+        purchase.PurchaseOrderNumber.Should().BeNull();
 
     }
 }
