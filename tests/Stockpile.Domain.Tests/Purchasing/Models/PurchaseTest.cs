@@ -344,11 +344,154 @@ public sealed class PurchaseTest
             createdAt.AddMinutes(1),
             unitPrice);
 
-        purchase.AddLine(createdAt.AddMinutes(-1), line);
+        Action act = () => purchase.AddLine(createdAt.AddMinutes(-1), line);
 
-        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(-1));
+        act.Should().Throw<ArgumentOutOfRangeException>()
+            .WithMessage("The changed timestamp cannot precede the current updated timestamp.*")
+            .WithParameterName("changedAt");
+
+        purchase.UpdatedAt.Should().Be(createdAt);
         purchase.Lines.Should().NotContain(line);
 
     }
+
+    [Fact]
+    public void A_null_purchase_line_should_be_rejected()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var currencyCode = new CurrencyCode("USD");
+        var unitPrice = new Money(1.25m, currencyCode);
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt);
+
+        Action act = () => purchase.AddLine(createdAt.AddMinutes(1), null!);
+
+        act.Should().Throw<ArgumentNullException>()
+            .WithParameterName("line");
+    }
+
+    [Fact]
+    public void A_line_cannot_be_added_to_an_ordered_purchase()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var currencyCode = new CurrencyCode("USD");
+        var unitPrice = new Money(1.25m, currencyCode);
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt);
+
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            1,
+            createdAt.AddMinutes(3),
+            unitPrice);
+
+        purchase.Submit(
+            createdAt.AddMinutes(1));
+
+        purchase.Order(
+            createdAt.AddMinutes(2), "123456");
+
+        Action act = () => purchase.AddLine(createdAt.AddMinutes(4), line);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("Purchase lines cannot be added to an ordered purchase.");
+
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(2));
+        purchase.Lines.Should().NotContain(line);
+    }
+
+    [Fact]
+    public void A_line_cannot_be_added_to_a_cancelled_purchase()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var currencyCode = new CurrencyCode("USD");
+        var unitPrice = new Money(1.25m, currencyCode);
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt);
+
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            1,
+            createdAt.AddMinutes(3),
+            unitPrice);
+
+        purchase.Submit(
+            createdAt.AddMinutes(1));
+
+        purchase.Cancel(
+            createdAt.AddMinutes(2));
+
+        Action act = () => purchase.AddLine(createdAt.AddMinutes(4), line);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("Purchase lines cannot be added to a cancelled purchase.");
+
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(2));
+        purchase.Lines.Should().NotContain(line);
+    }
+
+    [Fact]
+    public void Cancelling_an_ordered_purchase_should_throw_exception()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var currencyCode = new CurrencyCode("USD");
+        var unitPrice = new Money(1.25m, currencyCode);
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt);
+
+        purchase.Submit(
+            createdAt.AddMinutes(1));
+
+        purchase.Order(
+            createdAt.AddMinutes(2), "123456");
+
+        Action act = () => purchase.Cancel(createdAt.AddMinutes(3));
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("An ordered purchase cannot be cancelled.");
+
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(2));
+        purchase.Status.Should().Be(PurchaseStatus.Ordered);
+    }
+
+    [Fact]
+    public void Cancelling_a_cancelled_purchase_should_throw_exception()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var currencyCode = new CurrencyCode("USD");
+        var unitPrice = new Money(1.25m, currencyCode);
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt);
+
+        purchase.Cancel(
+            createdAt.AddMinutes(1));
+
+        Action act = () => purchase.Cancel(createdAt.AddMinutes(2));
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("A cancelled purchase cannot be cancelled.");
+
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(1));
+        purchase.Status.Should().Be(PurchaseStatus.Cancelled);
+    }
 }
-            

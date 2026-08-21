@@ -68,9 +68,31 @@ public sealed class Purchase : AggregateRoot
 
     public void AddLine(DateTimeOffset updatedAt, PurchaseLine line)
     {
+        if (line is null)
+            throw new ArgumentNullException(nameof(line));
+
+        if (Status == PurchaseStatus.Ordered)
+            throw new InvalidOperationException("Purchase lines cannot be added to an ordered purchase.");
+
+        if (Status == PurchaseStatus.Cancelled)
+            throw new InvalidOperationException("Purchase lines cannot be added to a cancelled purchase.");
+
         base.MarkUpdated(updatedAt);
 
         _lines.Add(line);
         
+    }
+
+    public void Cancel(DateTimeOffset updatedAt)
+    {
+        if (Status == PurchaseStatus.Ordered)
+            throw new InvalidOperationException("An ordered purchase cannot be cancelled.");
+
+        if (Status == PurchaseStatus.Cancelled)
+            throw new InvalidOperationException("A cancelled purchase cannot be cancelled.");
+
+        base.MarkUpdated(updatedAt);
+
+        Status = PurchaseStatus.Cancelled;
     }
 }
