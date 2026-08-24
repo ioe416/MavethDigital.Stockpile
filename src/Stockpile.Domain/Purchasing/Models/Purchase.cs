@@ -1,4 +1,5 @@
-﻿using MavethDigital.Forge.Domain.Models;
+﻿using MavethDigital.Forge.Core.ValueObjects;
+using MavethDigital.Forge.Domain.Models;
 using Stockpile.Domain.Purchasing.Enums;
 
 namespace Stockpile.Domain.Purchasing.Models;
@@ -81,6 +82,80 @@ public sealed class Purchase : AggregateRoot
 
         _lines.Add(line);
         
+    }
+
+    public void UpdateQuantity(
+        DateTimeOffset updatedAt, 
+        Guid lineId, 
+        int newQuantity)
+    {
+        var existingLine = _lines.SingleOrDefault(x => x.Id == lineId);
+
+        if (existingLine is null)
+            throw new ArgumentException("A valid purchase lineId must be selected",
+                nameof(existingLine));
+
+        if (Status == PurchaseStatus.Ordered)
+            throw new InvalidOperationException("Quantity cannot be altered on an ordered purchase.");
+
+        if (Status == PurchaseStatus.Cancelled)
+            throw new InvalidOperationException("Quantity cannot be altered on a cancelled purchase.");
+
+        existingLine.UpdateQuantity(updatedAt, newQuantity);
+
+        MarkUpdated(updatedAt);
+
+    }
+
+    public void UpdateUnitPrice(
+        DateTimeOffset updatedAt,
+        Guid lineId,
+        Money newUnitPrice)
+    {
+        var existingLine = _lines.SingleOrDefault(x => x.Id == lineId);
+
+        if (existingLine is null)
+            throw new ArgumentException("A valid purchase line must be selected",
+                nameof(existingLine));
+
+        if (Status == PurchaseStatus.Ordered)
+            throw new InvalidOperationException("Unit Price cannot be altered on an ordered purchase.");
+
+        if (Status == PurchaseStatus.Cancelled)
+            throw new InvalidOperationException("Unit Price cannot be altered on a cancelled purchase.");
+
+        existingLine.UpdateUnitPrice(updatedAt, newUnitPrice);
+
+        MarkUpdated(updatedAt);
+
+    }
+
+    public void UpdatePartId(
+        DateTimeOffset updatedAt,
+        Guid lineId,
+        Guid newPartId)
+    {
+        var existingLine = _lines.SingleOrDefault(x => x.Id == lineId);
+
+        if (existingLine is null)
+            throw new ArgumentException("A valid purchase line must be selected",
+                nameof(existingLine));
+
+        if (Status == PurchaseStatus.Ordered)
+            throw new InvalidOperationException("Part cannot be altered on an ordered purchase.");
+
+        if (Status == PurchaseStatus.Cancelled)
+            throw new InvalidOperationException("Part cannot be altered on a cancelled purchase.");
+
+        if (base.UpdatedAt > existingLine.UpdatedAt)
+            throw new ArgumentException("Purchase line updates cannot pre-date purchase updates");
+
+
+        existingLine.UpdatePartId(updatedAt, newPartId);
+
+
+        MarkUpdated(updatedAt);
+
     }
 
     public void Cancel(DateTimeOffset updatedAt)

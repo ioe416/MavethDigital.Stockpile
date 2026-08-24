@@ -104,4 +104,101 @@ public sealed class PurchaseLineTests
 
         line.UnitPrice.Should().BeNull();
     }
+
+
+    [Fact]
+    public void A_positive_quantity_should_update_quantity_and_updatedAs_as_long_as_parent_purchase_is_editable()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var partId = Guid.NewGuid();
+        var currencyCode = new CurrencyCode("USD");
+        var unitPrice = new Money(1.24m, currencyCode);
+        var newQuantity = 30;
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+        
+        var line = new PurchaseLine(
+            partId,
+            15,
+            createdAt.AddMinutes(1),
+            unitPrice);
+
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+
+        purchase.UpdateQuantity(createdAt.AddMinutes(3), line.Id, newQuantity);
+
+        line.Quantity.Should().Be(newQuantity);
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(3));
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(3));
+
+    }
+
+    [Fact]
+    public void A_valid_unit_price_should_update_unit_price_and_updatedAs_as_long_as_parent_purchase_is_editable()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var partId = Guid.NewGuid();
+        var currencyCode = new CurrencyCode("USD");
+        var unitPrice = new Money(1.24m, currencyCode);
+        var newUnitPrice = new Money(1.42m, currencyCode);
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+
+        var line = new PurchaseLine(
+            partId,
+            15,
+            createdAt.AddMinutes(1),
+            unitPrice);
+
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+
+        purchase.UpdateUnitPrice(createdAt.AddMinutes(4), line.Id, newUnitPrice);
+
+        line.UnitPrice.Should().Be(newUnitPrice);
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
+
+    }
+
+    [Fact]
+    public void A_purchase_line_should_allow_a_valid_part_substitution_and_update_updatedAs_as_long_as_parent_purchase_is_editable()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var partId = Guid.NewGuid();
+        var newPartId = Guid.NewGuid();
+        var currencyCode = new CurrencyCode("USD");
+        var unitPrice = new Money(1.24m, currencyCode);;
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+
+        var line = new PurchaseLine(
+            partId,
+            15,
+            createdAt.AddMinutes(1),
+            null);
+
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+
+        purchase.UpdatePartId(createdAt.AddMinutes(4), line.Id, newPartId);
+
+        line.PartId.Should().Be(newPartId);
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
+
+    }
 }

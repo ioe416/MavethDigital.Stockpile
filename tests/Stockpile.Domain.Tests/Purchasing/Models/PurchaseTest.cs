@@ -494,4 +494,373 @@ public sealed class PurchaseTest
         purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(1));
         purchase.Status.Should().Be(PurchaseStatus.Cancelled);
     }
+
+    [Fact]
+    public void A_draft_purchase_can_be_cancelled()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt);
+
+        purchase.Cancel(createdAt.AddMinutes(2));
+
+        purchase.Status.Should().Be(PurchaseStatus.Cancelled);
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(2));
+
+    }
+
+    [Fact]
+    public void A_requested_purchase_can_be_cancelled()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt);
+
+        purchase.Submit(createdAt.AddMinutes(1));
+
+        purchase.Cancel(createdAt.AddMinutes(2));
+
+        purchase.Status.Should().Be(PurchaseStatus.Cancelled);
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(2));
+
+    }
+
+    [Fact]
+    public void Updating_quantity_on_an_ordered_purchase_should_throw_and_leave_both_the_purchase_and_line_unchanged()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var unitPrice = new Money(1.25m, new CurrencyCode("USD"));
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            10,
+            createdAt.AddMinutes(1),
+            unitPrice);
+
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+
+        purchase.Submit(createdAt.AddMinutes(3));
+
+        purchase.Order(createdAt.AddMinutes(4), "123456");
+
+        Action act = () => purchase.UpdateQuantity(createdAt.AddMinutes(5), line.Id, 15);
+        
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("Quantity cannot be altered on an ordered purchase.");
+
+        purchase.Status.Should().Be(PurchaseStatus.Ordered);
+        line.Quantity.Should().Be(10);
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(1));
+    }
+
+    [Fact]
+    public void Updating_quantity_on_an_cancelled_purchase_should_throw_and_leave_both_the_purchase_and_line_unchanged()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var unitPrice = new Money(1.25m, new CurrencyCode("USD"));
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            10,
+            createdAt.AddMinutes(1),
+            unitPrice);
+
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+
+        purchase.Submit(createdAt.AddMinutes(3));
+
+        purchase.Cancel(createdAt.AddMinutes(4));
+
+        Action act = () => purchase.UpdateQuantity(createdAt.AddMinutes(5), line.Id, 15);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("Quantity cannot be altered on a cancelled purchase.");
+
+        purchase.Status.Should().Be(PurchaseStatus.Cancelled);
+        line.Quantity.Should().Be(10);
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(1));
+    }
+
+    [Fact]
+    public void Updating_unit_price_on_an_ordered_purchase_should_throw_and_leave_both_the_purchase_and_line_unchanged()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var unitPrice = new Money(1.25m, new CurrencyCode("USD"));
+        var newUnitPrice = new Money(1.52m, new CurrencyCode("USD"));
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            10,
+            createdAt.AddMinutes(1),
+            unitPrice);
+
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+
+        purchase.Submit(createdAt.AddMinutes(3));
+
+        purchase.Order(createdAt.AddMinutes(4), "123456");
+
+        Action act = () => purchase.UpdateUnitPrice(createdAt.AddMinutes(5), line.Id, newUnitPrice);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("Unit Price cannot be altered on an ordered purchase.");
+
+        purchase.Status.Should().Be(PurchaseStatus.Ordered);
+        line.UnitPrice.Should().Be(unitPrice);
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(1));
+    }
+
+    [Fact]
+    public void Updating_unit_price_on_a_cancelled_purchase_should_throw_and_leave_both_the_purchase_and_line_unchanged()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var unitPrice = new Money(1.25m, new CurrencyCode("USD"));
+        var newUnitPrice = new Money(1.52m, new CurrencyCode("USD"));
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            10,
+            createdAt.AddMinutes(1),
+            unitPrice);
+
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+
+        purchase.Submit(createdAt.AddMinutes(3));
+
+        purchase.Cancel(createdAt.AddMinutes(4));
+
+        Action act = () => purchase.UpdateUnitPrice(createdAt.AddMinutes(5), line.Id, newUnitPrice);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("Unit Price cannot be altered on a cancelled purchase.");
+
+        purchase.Status.Should().Be(PurchaseStatus.Cancelled);
+        line.UnitPrice.Should().Be(unitPrice);
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(1));
+    }
+
+    [Fact]
+    public void A_purchase_line_with_unknown_unit_price_can_be_given_a_unit_price()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var newUnitPrice = new Money(1.52m, new CurrencyCode("USD"));
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            10,
+            createdAt.AddMinutes(1),
+            null);
+
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+
+        purchase.Submit(createdAt.AddMinutes(3));
+
+        purchase.UpdateUnitPrice(createdAt.AddMinutes(5), line.Id, newUnitPrice);
+
+        purchase.Status.Should().Be(PurchaseStatus.Requested);
+        line.UnitPrice.Should().Be(newUnitPrice);
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(5));
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(5));
+    }
+
+    [Fact]
+    public void Updating_part_id_on_an_ordered_purchase_should_throw_and_leave_both_the_purchase_and_line_unchanged()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var unitPrice = new Money(1.25m, new CurrencyCode("USD"));
+        var partId = Guid.NewGuid();
+        var newPartId = Guid.NewGuid();
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+
+        var line = new PurchaseLine(
+            partId,
+            10,
+            createdAt.AddMinutes(1),
+            unitPrice);
+
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+
+        purchase.Submit(createdAt.AddMinutes(3));
+
+        purchase.Order(createdAt.AddMinutes(4), "123456");
+
+        Action act = () => purchase.UpdatePartId(createdAt.AddMinutes(5), line.Id, newPartId);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("Part cannot be altered on an ordered purchase.");
+
+        purchase.Status.Should().Be(PurchaseStatus.Ordered);
+        line.PartId.Should().Be(partId);
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(1));
+    }
+
+    [Fact]
+    public void Updating_part_id_on_a_cancelled_purchase_should_throw_and_leave_both_the_purchase_and_line_unchanged()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var unitPrice = new Money(1.25m, new CurrencyCode("USD"));
+        var partId = Guid.NewGuid();
+        var newPartId = Guid.NewGuid();
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+
+        var line = new PurchaseLine(
+            partId,
+            10,
+            createdAt.AddMinutes(1),
+            unitPrice);
+
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+
+        purchase.Submit(createdAt.AddMinutes(3));
+
+        purchase.Cancel(createdAt.AddMinutes(4));
+
+        Action act = () => purchase.UpdatePartId(createdAt.AddMinutes(5), line.Id, newPartId);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("Part cannot be altered on a cancelled purchase.");
+
+        purchase.Status.Should().Be(PurchaseStatus.Cancelled);
+        line.PartId.Should().Be(partId);
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(1));
+    }
+
+    [Fact]
+    public void PurchaseLine_update_timestamp_should_match_purchase_update_timestamp()
+    {
+        var partId = Guid.NewGuid();
+        var newPartId = Guid.NewGuid();
+
+        var createdAt = DateTimeOffset.UtcNow;
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+
+        purchase.Submit(createdAt.AddMinutes(1));
+
+        var line = new PurchaseLine(
+            partId,
+            1,
+            createdAt.AddMinutes(2),
+            new Money(1.25m, new CurrencyCode("USD")));
+
+        purchase.AddLine(createdAt.AddMinutes(3),
+            line);
+
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(3));
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(2));
+
+        purchase.UpdatePartId(createdAt.AddMinutes(4), line.Id, newPartId);
+
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
+    }
+
+
+    [Fact]
+    public void PurchaseLine_update_timestamp_doesnt_match_purchase_update_timestamp_should_throw()
+    {
+        var partId = Guid.NewGuid();
+        var newPartId = Guid.NewGuid();
+
+        var createdAt = DateTimeOffset.UtcNow;
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+
+        purchase.Submit(createdAt.AddMinutes(1));
+
+        var line = new PurchaseLine(
+            partId,
+            1,
+            createdAt.AddMinutes(3),
+            new Money(1.25m, new CurrencyCode("USD")));
+
+        purchase.AddLine(createdAt.AddMinutes(5),
+            line);
+
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(5));
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(3));
+
+        Action act  = () => purchase.UpdatePartId(
+            createdAt.AddMinutes(4), 
+            line.Id, 
+            newPartId);
+
+        act.Should().Throw<ArgumentException>();
+
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(5));
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(3));
+        line.PartId.Should().Be(partId);
+    }
+
 }

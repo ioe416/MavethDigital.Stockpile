@@ -5,11 +5,11 @@ namespace Stockpile.Domain.Purchasing.Models;
 
 public sealed class PurchaseLine : Entity
 {
-    public Guid PartId { get; }
+    public Guid PartId { get; private set; }
     
-    public int Quantity { get; }
+    public int Quantity { get; private set; }
     
-    public Money? UnitPrice { get; }
+    public Money? UnitPrice { get; private set; }
 
     public PurchaseLine(
         Guid partId,
@@ -31,4 +31,44 @@ public sealed class PurchaseLine : Entity
         UnitPrice = unitPrice;
     }
 
+    public void UpdateQuantity(DateTimeOffset updatedAt, 
+        int newQuantity)
+    {
+        if (newQuantity <= 0)
+            throw new ArgumentOutOfRangeException(
+                 nameof(newQuantity),
+                "A quantity greater than 0 is required.");
+
+        MarkUpdated(updatedAt);
+
+        Quantity = newQuantity;
+    }
+
+    public void UpdateUnitPrice(DateTimeOffset updatedAt,
+        Money newUnitPrice)
+    {
+        if (newUnitPrice.Amount <= 0m)
+            throw new ArgumentOutOfRangeException(
+                 nameof(newUnitPrice),
+                "A unit Price greater than 0 is required.");
+
+        MarkUpdated(updatedAt);
+
+        UnitPrice = newUnitPrice;
+    }
+
+    public void UpdatePartId(DateTimeOffset updatedAt,
+        Guid newPartId)
+    {
+        if (newPartId == PartId)
+            return;
+
+        if (newPartId == Guid.Empty)
+            throw new ArgumentException(
+                "A valid part is required");
+
+        MarkUpdated(updatedAt);
+
+        PartId = newPartId;
+    }
 }
