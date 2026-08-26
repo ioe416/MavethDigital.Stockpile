@@ -46,10 +46,10 @@ public sealed class PurchaseLine : Entity
     public void UpdateUnitPrice(DateTimeOffset updatedAt,
         Money newUnitPrice)
     {
-        if (newUnitPrice.Amount <= 0m)
+        if (newUnitPrice.Amount < 0m)
             throw new ArgumentOutOfRangeException(
                  nameof(newUnitPrice),
-                "A unit Price greater than 0 is required.");
+                "A unit Price of $0.00 or greater is required.");
 
         MarkUpdated(updatedAt);
 

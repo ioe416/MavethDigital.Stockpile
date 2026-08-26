@@ -264,7 +264,7 @@ public sealed class PurchaseLineTests
         Action act = () => purchase.UpdateUnitPrice(createdAt.AddMinutes(4), line.Id, newUnitPrice);
 
         act.Should().Throw<ArgumentOutOfRangeException>
-            ("A unit Price greater than 0 is required.");
+            ("A unit Price of $0.00 or greater is required.");
 
         line.UnitPrice.Should().Be(unitPrice);
         line.UpdatedAt.Should().Be(createdAt.AddMinutes(1));
@@ -272,7 +272,7 @@ public sealed class PurchaseLineTests
     }
 
     [Fact]
-    public void A_zero_unit_price_should_not_update_line_or_purchase_and_throw_exception()
+    public void A_zero_unit_price_should_update_line_and_purchase()
     {
         var createdAt = DateTimeOffset.UtcNow;
         var partId = Guid.NewGuid();
@@ -295,16 +295,43 @@ public sealed class PurchaseLineTests
 
         purchase.AddLine(createdAt.AddMinutes(2), line);
 
-        Action act = () => purchase.UpdateUnitPrice(createdAt.AddMinutes(4), line.Id, newUnitPrice);
+        purchase.UpdateUnitPrice(createdAt.AddMinutes(4), line.Id, newUnitPrice);
 
-        act.Should().Throw<ArgumentOutOfRangeException>
-            ("A unit Price greater than 0 is required.");
-
-        line.UnitPrice.Should().Be(unitPrice);
-        line.UpdatedAt.Should().Be(createdAt.AddMinutes(1));
-        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(2));
+        line.UnitPrice.Should().Be(newUnitPrice);
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
     }
 
+    [Fact]
+    public void Duplicate_lineIds_should_throw_exception()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            1,
+            createdAt.AddMinutes(1),
+            new Money(1.25m, new CurrencyCode("USD")));
+
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+
+        Action act = () => purchase.AddLine(createdAt.AddMinutes(3), line);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("Duplicate lines cannot be added to the same purchase.");
+
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(2));
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(1));
+        purchase.Lines.Should().Contain(line);
+        purchase.Lines.Count.Should().Be(1);
+    }
 
     [Fact]
     public void A_purchase_line_should_allow_a_valid_part_substitution_and_update_updatedAs_as_long_as_parent_purchase_is_editable()

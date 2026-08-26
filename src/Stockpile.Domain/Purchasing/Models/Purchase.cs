@@ -78,6 +78,9 @@ public sealed class Purchase : AggregateRoot
         if (Status == PurchaseStatus.Cancelled)
             throw new InvalidOperationException("Purchase lines cannot be added to a cancelled purchase.");
 
+        if (_lines.Any(x => x.Id == line.Id))
+            throw new InvalidOperationException("Duplicate lines cannot be added to the same purchase.");
+            
         base.MarkUpdated(updatedAt);
 
         _lines.Add(line);
@@ -86,10 +89,12 @@ public sealed class Purchase : AggregateRoot
 
     public void RemoveLine(DateTimeOffset updatedAt, Guid lineId)
     {
-        var existingLine = _lines.SingleOrDefault(x => x.Id == lineId);
-
         if (lineId == Guid.Empty)
-            throw new ArgumentNullException(nameof(lineId));
+            throw new ArgumentException(
+                "A valid purchase line must be selected.",
+                nameof(lineId));
+
+        var existingLine = _lines.SingleOrDefault(x => x.Id == lineId);
 
         if (Status == PurchaseStatus.Ordered)
             throw new InvalidOperationException("Purchase lines cannot be removed from an ordered purchase.");
@@ -158,7 +163,7 @@ public sealed class Purchase : AggregateRoot
 
         if (newUnitPrice == null)
             throw new ArgumentException(
-                "A valid posive unit price is required");
+                "A valid positive unit price is required");
 
         existingLine.UpdateUnitPrice(updatedAt, newUnitPrice);
 
