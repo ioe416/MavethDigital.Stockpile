@@ -36,8 +36,7 @@ public sealed class PurchaseLine : Entity
     {
         if (newQuantity <= 0)
             throw new ArgumentOutOfRangeException(
-                 nameof(newQuantity),
-                "A quantity greater than 0 is required.");
+                 "A quantity greater than 0 is required.");
 
         MarkUpdated(updatedAt);
 
@@ -63,8 +62,13 @@ public sealed class PurchaseLine : Entity
         if (newPartId == PartId)
             return;
 
+        if (newPartId == Guid.Empty)
+            throw new ArgumentException(
+                "A valid part is required");
+
         base.MarkUpdated(updatedAt);
 
         PartId = newPartId;
     }
+
 }

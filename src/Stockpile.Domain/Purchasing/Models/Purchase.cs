@@ -84,6 +84,28 @@ public sealed class Purchase : AggregateRoot
         
     }
 
+    public void RemoveLine(DateTimeOffset updatedAt, Guid lineId)
+    {
+        var existingLine = _lines.SingleOrDefault(x => x.Id == lineId);
+
+        if (lineId == Guid.Empty)
+            throw new ArgumentNullException(nameof(lineId));
+
+        if (Status == PurchaseStatus.Ordered)
+            throw new InvalidOperationException("Purchase lines cannot be removed from an ordered purchase.");
+
+        if (Status == PurchaseStatus.Cancelled)
+            throw new InvalidOperationException("Purchase lines cannot be removed from a cancelled purchase.");
+
+        if (existingLine is null)
+            throw new InvalidOperationException("Purchase does not contain the selected line");
+
+        base.MarkUpdated(updatedAt);
+
+        _lines.Remove(existingLine);
+
+    }
+
     public void UpdateQuantity(
         DateTimeOffset updatedAt, 
         Guid lineId, 
@@ -92,14 +114,21 @@ public sealed class Purchase : AggregateRoot
         var existingLine = _lines.SingleOrDefault(x => x.Id == lineId);
 
         if (existingLine is null)
-            throw new ArgumentException("A valid purchase lineId must be selected",
-                nameof(existingLine));
+            throw new ArgumentException("A valid purchase line must be selected",
+                nameof(lineId));
 
         if (Status == PurchaseStatus.Ordered)
             throw new InvalidOperationException("Quantity cannot be altered on an ordered purchase.");
 
         if (Status == PurchaseStatus.Cancelled)
             throw new InvalidOperationException("Quantity cannot be altered on a cancelled purchase.");
+
+        if (updatedAt < UpdatedAt)
+            throw new ArgumentOutOfRangeException("Purchase line updates cannot pre-date purchase updates");
+
+        if (newQuantity < 1)
+            throw new ArgumentOutOfRangeException(
+                "A valid positive quantity is required");
 
         existingLine.UpdateQuantity(updatedAt, newQuantity);
 
@@ -110,19 +139,26 @@ public sealed class Purchase : AggregateRoot
     public void UpdateUnitPrice(
         DateTimeOffset updatedAt,
         Guid lineId,
-        Money newUnitPrice)
+        Money? newUnitPrice)
     {
         var existingLine = _lines.SingleOrDefault(x => x.Id == lineId);
 
         if (existingLine is null)
             throw new ArgumentException("A valid purchase line must be selected",
-                nameof(existingLine));
+                nameof(lineId));
 
         if (Status == PurchaseStatus.Ordered)
             throw new InvalidOperationException("Unit Price cannot be altered on an ordered purchase.");
 
         if (Status == PurchaseStatus.Cancelled)
             throw new InvalidOperationException("Unit Price cannot be altered on a cancelled purchase.");
+
+        if (updatedAt < UpdatedAt)
+            throw new ArgumentOutOfRangeException("Purchase line updates cannot pre-date purchase updates");
+
+        if (newUnitPrice == null)
+            throw new ArgumentException(
+                "A valid posive unit price is required");
 
         existingLine.UpdateUnitPrice(updatedAt, newUnitPrice);
 

@@ -821,7 +821,6 @@ public sealed class PurchaseTest
         line.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
     }
 
-
     [Fact]
     public void PurchaseLine_update_timestamp_doesnt_match_purchase_update_timestamp_should_throw()
     {
@@ -863,4 +862,182 @@ public sealed class PurchaseTest
         line.PartId.Should().Be(partId);
     }
 
+    [Fact]
+    public void Draft_purchases_should_allow_a_line_to_be_removed()
+    {
+        var partId = Guid.NewGuid();
+        var createdAt = DateTimeOffset.UtcNow;
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+
+        var line = new PurchaseLine(
+            partId,
+            1,
+            createdAt.AddMinutes(3),
+            new Money(1.25m, new CurrencyCode("USD")));
+
+        purchase.AddLine(createdAt.AddMinutes(5),
+            line);
+
+        purchase.Lines.Count.Should().Be(1);
+
+        purchase.RemoveLine(createdAt.AddMinutes(6), line.Id);
+
+        purchase.Status.Should().Be(PurchaseStatus.Draft);
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(6));
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(3));
+        purchase.Lines.Count.Should().Be(0);
+    }
+
+    [Fact]
+    public void Submitted_purchases_should_allow_a_line_to_be_removed()
+    {
+        var partId = Guid.NewGuid();
+
+        var createdAt = DateTimeOffset.UtcNow;
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+
+        purchase.Submit(createdAt.AddMinutes(2));
+
+        var line = new PurchaseLine(
+            partId,
+            1,
+            createdAt.AddMinutes(3),
+            new Money(1.25m, new CurrencyCode("USD")));
+
+        purchase.AddLine(createdAt.AddMinutes(5),
+            line);
+
+        purchase.Lines.Count.Should().Be(1);
+
+        purchase.RemoveLine(createdAt.AddMinutes(6), line.Id);
+
+
+        purchase.Status.Should().Be(PurchaseStatus.Requested);
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(6));
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(3));
+        purchase.Lines.Count.Should().Be(0);
+    }
+
+    [Fact]
+    public void Attemp_to_delete_non_existent_line_should_not_update_purchase()
+    {
+        var partId = Guid.NewGuid();
+        var createdAt = DateTimeOffset.UtcNow;
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt);
+
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            1,
+            createdAt.AddMinutes(1),
+            new Money(1.25m, new CurrencyCode("USD")));
+
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+
+        var secondPurchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt.AddMinutes(3));
+
+        Action act = () => secondPurchase.RemoveLine(createdAt.AddMinutes(4), line.Id);
+
+        act.Should().Throw
+            <InvalidOperationException>()
+            .WithMessage("Purchase does not contain the selected line");
+
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(2));
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(1));
+        secondPurchase.UpdatedAt.Should().Be(createdAt.AddMinutes(3));
+        secondPurchase.Lines.Should().BeEmpty();
+
+    }
+
+    [Fact]
+    public void Attempt_to_delete_line_from_ordered_purchase_should_throw_and_leave_purchase_unchanged()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var unitPrice = new Money(1.25m, new CurrencyCode("USD"));
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            10,
+            createdAt.AddMinutes(1),
+            unitPrice);
+
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+
+        purchase.Submit(createdAt.AddMinutes(3));
+
+        purchase.Order(createdAt.AddMinutes(4), "123456");
+
+        Action act = () => purchase.RemoveLine(createdAt.AddMinutes(5), line.Id);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("Purchase lines cannot be removed from an ordered purchase.");
+
+        purchase.Status.Should().Be(PurchaseStatus.Ordered);
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(1));
+        purchase.Lines.Should().Contain(line);
+    }
+
+    [Fact]
+    public void Attempt_to_delete_line_from_cancelled_purchase_should_throw_and_leave_purchase_unchanged()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var unitPrice = new Money(1.25m, new CurrencyCode("USD"));
+
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            10,
+            createdAt.AddMinutes(1),
+            unitPrice);
+
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+
+        purchase.Submit(createdAt.AddMinutes(3));
+
+        purchase.Cancel(createdAt.AddMinutes(4));
+
+        Action act = () => purchase.RemoveLine(createdAt.AddMinutes(5), line.Id);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("Purchase lines cannot be removed from a cancelled purchase.");
+
+        purchase.Status.Should().Be(PurchaseStatus.Cancelled);
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
+        line.UpdatedAt.Should().Be(createdAt.AddMinutes(1));
+        purchase.Lines.Should().Contain(line);
+    }
 }
