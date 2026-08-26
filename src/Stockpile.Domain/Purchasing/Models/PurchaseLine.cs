@@ -63,11 +63,7 @@ public sealed class PurchaseLine : Entity
         if (newPartId == PartId)
             return;
 
-        if (newPartId == Guid.Empty)
-            throw new ArgumentException(
-                "A valid part is required");
-
-        MarkUpdated(updatedAt);
+        base.MarkUpdated(updatedAt);
 
         PartId = newPartId;
     }

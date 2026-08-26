@@ -139,7 +139,7 @@ public sealed class Purchase : AggregateRoot
 
         if (existingLine is null)
             throw new ArgumentException("A valid purchase line must be selected",
-                nameof(existingLine));
+                nameof(lineId));
 
         if (Status == PurchaseStatus.Ordered)
             throw new InvalidOperationException("Part cannot be altered on an ordered purchase.");
@@ -147,14 +147,16 @@ public sealed class Purchase : AggregateRoot
         if (Status == PurchaseStatus.Cancelled)
             throw new InvalidOperationException("Part cannot be altered on a cancelled purchase.");
 
-        if (base.UpdatedAt > existingLine.UpdatedAt)
-            throw new ArgumentException("Purchase line updates cannot pre-date purchase updates");
+        if (updatedAt < UpdatedAt)
+            throw new ArgumentOutOfRangeException("Purchase line updates cannot pre-date purchase updates");
 
+        if (newPartId == Guid.Empty)
+            throw new ArgumentException(
+                "A valid part is required");
 
         existingLine.UpdatePartId(updatedAt, newPartId);
 
-
-        MarkUpdated(updatedAt);
+        base.MarkUpdated(updatedAt);
 
     }
 

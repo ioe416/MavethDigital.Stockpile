@@ -856,7 +856,7 @@ public sealed class PurchaseTest
             line.Id, 
             newPartId);
 
-        act.Should().Throw<ArgumentException>();
+        act.Should().Throw<ArgumentOutOfRangeException>();
 
         purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(5));
         line.UpdatedAt.Should().Be(createdAt.AddMinutes(3));
