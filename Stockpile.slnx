@@ -4,6 +4,7 @@
     <Project Path="Stockpile.Application/Stockpile.Application.csproj" Id="7919d135-3195-408f-9472-0f5d8323b925" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="Stockpile.Application.Tests/Stockpile.Application.Tests.csproj" Id="6a7c61d6-dc4f-4c40-9a7f-c312761e51e0" />
     <Project Path="tests/Stockpile.Domain.Tests/Stockpile.Domain.Tests.csproj" />
   </Folder>
 </Solution>
