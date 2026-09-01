@@ -35,6 +35,10 @@ public sealed class Receipt : AggregateRoot
             throw new InvalidOperationException(
                 "Duplicate lines cannot be added to the same receipt.");
 
+        if (_lines.Any(x => x.PurchaseLineId == line.PurchaseLineId))
+            throw new InvalidOperationException(
+                "Duplicate purchase lines cannot be referenced in the same receipt.");
+
         base.MarkUpdated(updatedAt);
 
         _lines.Add(line);

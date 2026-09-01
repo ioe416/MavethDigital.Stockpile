@@ -1,6 +1,7 @@
 ﻿
 using FluentAssertions;
 using Stockpile.Domain.Purchasing.Models;
+using System.ComponentModel;
 
 namespace Stockpile.Domain.Tests.Purchasing.Models;
 
@@ -117,6 +118,56 @@ public sealed class ReceiptTests
     {
         var createdAt = DateTimeOffset.UtcNow;
 
+        var line = new ReceiptLine(
+            Guid.NewGuid(),
+            1,
+            createdAt.AddMinutes(2));
+
+        line.QuantityReceived.Should().Be(1);
+    }
+
+
+    [Fact]
+    public void Zero_receipt_quantities_should_throw_exception()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+
+        var receipt = new Receipt(
+            Guid.NewGuid(),
+            createdAt);
+
+        Action act = () => new ReceiptLine(
+            Guid.NewGuid(),
+            0,
+            createdAt.AddMinutes(2));
+
+        act.Should().Throw<ArgumentOutOfRangeException>()
+            .WithParameterName("quantityReceived");
+    }
+
+    [Fact]
+    public void Negative_receipt_quantities_should_throw_exception()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+
+        var receipt = new Receipt(
+            Guid.NewGuid(),
+            createdAt);
+
+        Action act = () => new ReceiptLine(
+            Guid.NewGuid(),
+            -1,
+            createdAt.AddMinutes(2));
+
+        act.Should().Throw<ArgumentOutOfRangeException>()
+            .WithParameterName("quantityReceived");
+    }
+
+    [Fact]
+    public void A_receipt_can_contain_multiple_distinct_receipt_lines()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+
         var receipt = new Receipt(
             Guid.NewGuid(),
             createdAt);
@@ -124,8 +175,51 @@ public sealed class ReceiptTests
         var line = new ReceiptLine(
             Guid.NewGuid(),
             1,
+            createdAt.AddMinutes(1));
+
+        var line2 = new ReceiptLine(
+            Guid.NewGuid(),
+            1,
             createdAt.AddMinutes(2));
 
+        receipt.AddLine(createdAt.AddMinutes(3), line);
+
+        receipt.AddLine(createdAt.AddMinutes(4), line2);
+
+        receipt.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
+        receipt.Lines.Should().HaveCount(2);
+    }
+
+    [Fact]
+    public void A_duplicate_purchaseLine_cannot_be_referenced_in_the_same_receipt()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var purchaseLineId = Guid.NewGuid();
+
+        var receipt = new Receipt(
+            Guid.NewGuid(),
+            createdAt);
+
+        var line = new ReceiptLine(
+            purchaseLineId,
+            1,
+            createdAt.AddMinutes(1));
+
+        var line2 = new ReceiptLine(
+            purchaseLineId,
+            5,
+            createdAt.AddMinutes(3));
+
+        receipt.AddLine(createdAt.AddMinutes(4), line);
+
+        Action act = () => receipt.AddLine(
+                            createdAt.AddMinutes(5), line2);
+
+        act.Should().Throw<InvalidOperationException>()
+            .WithMessage("Duplicate purchase lines cannot be referenced in the same receipt.");
+
+        receipt.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
+        receipt.Lines.Should().HaveCount(1);
     }
 }
 

@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/src/">
     <Project Path="src/Stockpile.Domain/Stockpile.Domain.csproj" />
+    <Project Path="Stockpile.Application/Stockpile.Application.csproj" Id="7919d135-3195-408f-9472-0f5d8323b925" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Stockpile.Domain.Tests/Stockpile.Domain.Tests.csproj" />
