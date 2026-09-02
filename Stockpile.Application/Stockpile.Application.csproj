@@ -10,8 +10,4 @@
     <ProjectReference Include="..\src\Stockpile.Domain\Stockpile.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Purchasing\Receiving\" />
-  </ItemGroup>
-
 </Project>
