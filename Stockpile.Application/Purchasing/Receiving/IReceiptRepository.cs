@@ -6,7 +6,7 @@ namespace Stockpile.Application.Purchasing.Receiving;
 public interface IReceiptRepository
 {
     Task <Receipt?> GetByIdAsync(
-        Guid accountId,
+        Guid receiptId,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(
