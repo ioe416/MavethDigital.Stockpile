@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\src\Stockpile.Domain\Stockpile.Domain.csproj" />
+    <ProjectReference Include="..\Stockpile.Application\Stockpile.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>
