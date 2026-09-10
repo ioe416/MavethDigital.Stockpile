@@ -288,6 +288,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             1,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -314,6 +315,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             1,
+            0, 
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -339,6 +341,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             1,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -388,6 +391,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             1,
+            0,
             createdAt.AddMinutes(3),
             unitPrice);
 
@@ -422,6 +426,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             1,
+            0,
             createdAt.AddMinutes(3),
             unitPrice);
 
@@ -547,6 +552,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             10,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -583,6 +589,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             10,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -620,6 +627,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             10,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -657,6 +665,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             10,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -693,6 +702,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             10,
+            0,
             createdAt.AddMinutes(1),
             null);
 
@@ -726,6 +736,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             partId,
             10,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -764,6 +775,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             partId,
             10,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -804,6 +816,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             partId,
             1,
+            0,
             createdAt.AddMinutes(2),
             new Money(1.25m, new CurrencyCode("USD")));
 
@@ -839,6 +852,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             partId,
             1,
+            0,
             createdAt.AddMinutes(3),
             new Money(1.25m, new CurrencyCode("USD")));
 
@@ -876,6 +890,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             partId,
             1,
+            0,
             createdAt.AddMinutes(3),
             new Money(1.25m, new CurrencyCode("USD")));
 
@@ -911,6 +926,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             partId,
             1,
+            0,
             createdAt.AddMinutes(3),
             new Money(1.25m, new CurrencyCode("USD")));
 
@@ -943,6 +959,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             1,
+            0,
             createdAt.AddMinutes(1),
             new Money(1.25m, new CurrencyCode("USD")));
 
@@ -983,6 +1000,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             10,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -1019,6 +1037,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             10,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 

@@ -15,6 +15,7 @@ public sealed class PurchaseLineTests
         Action act = () => new PurchaseLine(
             Guid.Empty,
             1,
+            0,
             createdAt,
             null);
 
@@ -31,6 +32,7 @@ public sealed class PurchaseLineTests
         Action act = () => new PurchaseLine(
             Guid.NewGuid(),
             0,
+            0, 
             createdAt,
             null);
 
@@ -50,6 +52,7 @@ public sealed class PurchaseLineTests
         var line = new PurchaseLine(
             partId,
             1,
+            0,
             createdAt,
             unitPrice);
 
@@ -67,6 +70,7 @@ public sealed class PurchaseLineTests
         var line = new PurchaseLine(
             partId,
             15,
+            0,
             createdAt,
             unitPrice);
 
@@ -84,6 +88,7 @@ public sealed class PurchaseLineTests
         var line = new PurchaseLine(
             partId,
             15,
+            0,
             createdAt,
             unitPrice);
 
@@ -99,6 +104,7 @@ public sealed class PurchaseLineTests
         var line = new PurchaseLine(
             partId,
             15,
+            0,
             createdAt,
             null);
 
@@ -124,6 +130,7 @@ public sealed class PurchaseLineTests
         var line = new PurchaseLine(
             partId,
             15,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -156,6 +163,7 @@ public sealed class PurchaseLineTests
         var line = new PurchaseLine(
             partId,
             15,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -190,6 +198,7 @@ public sealed class PurchaseLineTests
         var line = new PurchaseLine(
             partId,
             15,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -224,6 +233,7 @@ public sealed class PurchaseLineTests
         var line = new PurchaseLine(
             partId,
             15,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -256,6 +266,7 @@ public sealed class PurchaseLineTests
         var line = new PurchaseLine(
             partId,
             15,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -290,6 +301,7 @@ public sealed class PurchaseLineTests
         var line = new PurchaseLine(
             partId,
             15,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -317,6 +329,7 @@ public sealed class PurchaseLineTests
         var line = new PurchaseLine(
             Guid.NewGuid(),
             1,
+            0,
             createdAt.AddMinutes(1),
             new Money(1.25m, new CurrencyCode("USD")));
 
@@ -352,6 +365,7 @@ public sealed class PurchaseLineTests
         var line = new PurchaseLine(
             partId,
             15,
+            0,
             createdAt.AddMinutes(1),
             null);
 

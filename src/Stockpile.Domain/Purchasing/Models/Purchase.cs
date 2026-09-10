@@ -213,4 +213,18 @@ public sealed class Purchase : AggregateRoot
 
         Status = PurchaseStatus.Cancelled;
     }
+
+    public void RecordReceipt(DateTimeOffset updatedAt, Guid lineId, int receivedQuantity)
+    {
+        var existingLine = _lines.SingleOrDefault(x => x.Id == lineId);
+        if (existingLine is null)
+            throw new ArgumentException("A valid purchase line must be selected",
+                nameof(lineId));
+        if (Status != PurchaseStatus.Ordered)
+            throw new InvalidOperationException("Receipts can only be recorded for ordered purchases.");
+        if (updatedAt < UpdatedAt)
+            throw new ArgumentOutOfRangeException("Purchase line updates cannot pre-date purchase updates");
+        existingLine.UpdateReceivedQuantity(updatedAt, receivedQuantity);
+        MarkUpdated(updatedAt);
+    }
 }

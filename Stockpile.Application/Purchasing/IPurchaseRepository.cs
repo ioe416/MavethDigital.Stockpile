@@ -8,5 +8,14 @@ namespace Stockpile.Application.Purchasing
         Guid purchaseId,
         CancellationToken cancellationToken = default);
 
+        Task<Purchase?> RecordReceipt(
+            Guid purchaseId,
+            Guid purchaseLineId,
+            int quantityReceived,
+            DateTimeOffset createdAt,
+            CancellationToken cancellationToken = default);
+ 
     }
 }
+
+
