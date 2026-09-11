@@ -415,4 +415,198 @@ public sealed class ReceivingTests
         purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(6));
         purchase.Status.Should().Be(PurchaseStatus.Completed);
     }
+
+    [Fact]
+    public async Task Accumulating_more_than_ordered_should_throw_exception()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            10,
+            0,
+            createdAt.AddMinutes(1),
+            new Money(10.00m, new CurrencyCode("USD")));
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+        purchase.Submit(createdAt.AddMinutes(3));
+        purchase.Order(createdAt.AddMinutes(4), "123456");
+        var purchaseRepository = new FakePurchaseRepository
+        {
+            Purchase = purchase
+        };
+        var receiptRepository = new FakeReceiptRepository { };
+        var handler = new RecordReceiptHandler(
+            purchaseRepository,
+            receiptRepository);
+        var receipt1 = new RecordReceiptCommand(
+            purchase.Id,
+            line.Id,
+            6,
+            createdAt.AddMinutes(5));
+        var receipt2 = new RecordReceiptCommand(
+            purchase.Id,
+            line.Id,
+            5, // This will exceed the ordered quantity
+            createdAt.AddMinutes(6));
+        Func<Task> act1 = async () => await handler.HandleAsync(receipt1);
+        Func<Task> act2 = async () => await handler.HandleAsync(receipt2);
+        await act1.Should().NotThrowAsync();
+        await act2.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Total Received quantity cannot exceed ordered quantity*");
+    }
+
+    [Fact]
+    public async Task Receiving_against_a_cancelled_purchase_should_throw_exception()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            10,
+            0,
+            createdAt.AddMinutes(1),
+            new Money(10.00m, new CurrencyCode("USD")));
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+        purchase.Submit(createdAt.AddMinutes(3));
+        purchase.Cancel(createdAt.AddMinutes(5));
+        var purchaseRepository = new FakePurchaseRepository
+        {
+            Purchase = purchase
+        };
+        var receiptRepository = new FakeReceiptRepository { };
+        var handler = new RecordReceiptHandler(
+            purchaseRepository,
+            receiptRepository);
+        var receiptCommand = new RecordReceiptCommand(
+            purchase.Id,
+            line.Id,
+            4,
+            createdAt.AddMinutes(6));
+        Func<Task> act = async () => await handler.HandleAsync(receiptCommand);
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Receipts can only be recorded for ordered purchases.");
+    }
+
+    [Fact]
+    public async Task Receiving_against_a_draft_purchase_should_throw_exception()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            10,
+            0,
+            createdAt.AddMinutes(1),
+            new Money(10.00m, new CurrencyCode("USD")));
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+        var purchaseRepository = new FakePurchaseRepository
+        {
+            Purchase = purchase
+        };
+        var receiptRepository = new FakeReceiptRepository { };
+        var handler = new RecordReceiptHandler(
+            purchaseRepository,
+            receiptRepository);
+        var receiptCommand = new RecordReceiptCommand(
+            purchase.Id,
+            line.Id,
+            4,
+            createdAt.AddMinutes(3));
+        Func<Task> act = async () => await handler.HandleAsync(receiptCommand);
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Receipts can only be recorded for ordered purchases.");
+    }
+
+    [Fact]
+    public async Task Receiving_against_a_requested_purchase_should_throw_exception()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            10,
+            0,
+            createdAt.AddMinutes(1),
+            new Money(10.00m, new CurrencyCode("USD")));
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+        purchase.Submit(createdAt.AddMinutes(3));
+        var purchaseRepository = new FakePurchaseRepository
+        {
+            Purchase = purchase
+        };
+        var receiptRepository = new FakeReceiptRepository { };
+        var handler = new RecordReceiptHandler(
+            purchaseRepository,
+            receiptRepository);
+        var receiptCommand = new RecordReceiptCommand(
+            purchase.Id,
+            line.Id,
+            4,
+            createdAt.AddMinutes(4));
+        Func<Task> act = async () => await handler.HandleAsync(receiptCommand);
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Receipts can only be recorded for ordered purchases.");
+    }
+
+    [Fact]
+    public async Task Receipt_is_saved_even_when_purchase_rejects()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            10,
+            0,
+            createdAt.AddMinutes(1),
+            new Money(10.00m, new CurrencyCode("USD")));
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+        purchase.Submit(createdAt.AddMinutes(3));
+        purchase.Cancel(createdAt.AddMinutes(4));
+        var purchaseRepository = new FakePurchaseRepository
+        {
+            Purchase = purchase
+        };
+        var receiptRepository = new FakeReceiptRepository { };
+        var handler = new RecordReceiptHandler(
+            purchaseRepository,
+            receiptRepository);
+        var receiptCommand = new RecordReceiptCommand(
+            purchase.Id,
+            line.Id,
+            4,
+            createdAt.AddMinutes(6));
+        Func<Task> act = async () => await handler.HandleAsync(receiptCommand);
+        await act.Should().ThrowAsync<InvalidOperationException>()
+            .WithMessage("Receipts can only be recorded for ordered purchases.");
+
+        // Verify that the receipt was still saved
+        var savedReceipt = receiptRepository.AddedReceipt;
+        receiptRepository.Receipts.Should().HaveCount(1);
+        savedReceipt!.PurchaseId.Should().Be(purchase.Id);
+    }
 }
