@@ -234,4 +234,27 @@ public sealed class Purchase : AggregateRoot
 
         MarkUpdated(updatedAt);
     }
+
+    public void UndoReceipt(Guid lineId, int quantity, DateTimeOffset updatedAt)
+    {
+        var existingLine = _lines.SingleOrDefault(x => x.Id == lineId);
+
+        if (quantity <= 0)
+            throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be greater than zero.");
+
+        if (existingLine is null)
+            throw new ArgumentException("A valid receipt line must be selected",
+                nameof(lineId));
+
+        if (quantity > existingLine.ReceivedQuantity)
+            throw new InvalidOperationException("Cannot undo more than the received quantity.");
+
+
+        existingLine.ReceivedQuantity -= quantity;
+
+        base.MarkUpdated(updatedAt);
+
+        if (_lines.Any(x => x.ReceivedQuantity < x.Quantity))
+            Status = PurchaseStatus.Ordered;
+    }
 }

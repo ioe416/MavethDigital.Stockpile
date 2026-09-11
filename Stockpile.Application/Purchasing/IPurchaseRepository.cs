@@ -14,6 +14,10 @@ namespace Stockpile.Application.Purchasing
             int quantityReceived,
             DateTimeOffset createdAt,
             CancellationToken cancellationToken = default);
+
+        Task<Purchase> UpdateAsync(
+            Purchase purchase,
+            CancellationToken cancellationToken = default);
  
     }
 }

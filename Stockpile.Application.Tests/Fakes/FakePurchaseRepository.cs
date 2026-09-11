@@ -32,5 +32,15 @@ namespace Stockpile.Application.Tests.Fakes
 
             return Task.FromResult<Purchase?>(Purchase);
         }
+
+        public Task<Purchase> UpdateAsync(
+            Purchase purchase,
+            CancellationToken cancellationToken = default)
+        {
+            Purchase = purchase;
+            return Task.FromResult(purchase);
+        }
+
+
     }
 }

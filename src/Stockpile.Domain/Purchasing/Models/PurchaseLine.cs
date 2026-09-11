@@ -9,9 +9,14 @@ public sealed class PurchaseLine : Entity
     
     public int Quantity { get; private set; }
 
-    public int ReceivedQuantity { get; private set; } = 0;
+    public int ReceivedQuantity { get; set; } = 0;
+
+    public int OutstandingQuantity => Quantity - ReceivedQuantity;
 
     public Money? UnitPrice { get; private set; }
+
+    public bool IsPartiallyComplete =>
+        ReceivedQuantity > 0 && ReceivedQuantity < Quantity;
 
     public PurchaseLine(
         Guid partId,

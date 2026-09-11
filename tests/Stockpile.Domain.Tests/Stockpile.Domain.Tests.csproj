@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Stockpile.Domain\Stockpile.Domain.csproj" />
+    <ProjectReference Include="..\..\Stockpile.Application.Tests\Stockpile.Application.Tests.csproj" />
   </ItemGroup>
 
 </Project>
