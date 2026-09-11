@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Stockpile.Application.Purchasing.Receiving.RecordReceipt
+namespace Stockpile.Application.Purchasing.Receiving.UndoReceipt
 {
     public sealed record UndoReceiptCommand(
         Guid PurchaseId,

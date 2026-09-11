@@ -257,4 +257,20 @@ public sealed class Purchase : AggregateRoot
         if (_lines.Any(x => x.ReceivedQuantity < x.Quantity))
             Status = PurchaseStatus.Ordered;
     }
+
+    public void ApplyRtv(Guid lineId, int quantity, DateTimeOffset updatedAt)
+    {
+        var line = _lines.Single(x => x.Id == lineId);
+
+        if (quantity <= 0)
+            throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be greater than zero.");
+
+        if (line.ReceivedQuantity - quantity < 0)
+            throw new InvalidOperationException("Cannot return more than the received quantity.");
+
+        line.ReceivedQuantity -= quantity;
+
+        if (_lines.Any(x => x.ReceivedQuantity < x.Quantity))
+            Status = PurchaseStatus.Ordered;
+    }
 }

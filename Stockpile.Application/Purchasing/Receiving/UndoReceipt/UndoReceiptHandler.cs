@@ -1,5 +1,4 @@
-﻿
-namespace Stockpile.Application.Purchasing.Receiving.RecordReceipt
+﻿namespace Stockpile.Application.Purchasing.Receiving.UndoReceipt
 {
     public sealed class UndoReceiptHandler
     {
