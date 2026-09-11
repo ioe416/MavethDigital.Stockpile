@@ -53,10 +53,6 @@ namespace Stockpile.Application.Purchasing.Receiving.RecordReceipt
                 receipt,
                 cancellationToken);
 
-            if ((command.QuantityReceived + purchaseLine.ReceivedQuantity) > purchaseLine.Quantity)
-                throw new ArgumentOutOfRangeException(nameof(command.QuantityReceived),
-                    "Total Received quantity cannot exceed ordered quantity");
-
             await _purchaseRepository.RecordReceipt(
                 purchase.Id,
                 command.PurchaseLineId,

@@ -224,7 +224,14 @@ public sealed class Purchase : AggregateRoot
             throw new InvalidOperationException("Receipts can only be recorded for ordered purchases.");
         if (updatedAt < UpdatedAt)
             throw new ArgumentOutOfRangeException("Purchase line updates cannot pre-date purchase updates");
+        
         existingLine.UpdateReceivedQuantity(updatedAt, receivedQuantity);
+
+        if (_lines.All(x => x.ReceivedQuantity == x.Quantity))
+        {
+            Status = PurchaseStatus.Completed;
+        }
+
         MarkUpdated(updatedAt);
     }
 }

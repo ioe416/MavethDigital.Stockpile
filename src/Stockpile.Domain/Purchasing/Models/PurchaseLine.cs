@@ -87,7 +87,7 @@ public sealed class PurchaseLine : Entity
                "Total received quantity cannot exceed ordered quantity.");
 
         MarkUpdated(updatedAt);
-        ReceivedQuantity = newReceivedQuantity;
+        ReceivedQuantity += newReceivedQuantity;
     }
 
 }

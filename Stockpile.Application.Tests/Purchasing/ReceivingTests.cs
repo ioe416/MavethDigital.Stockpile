@@ -260,15 +260,159 @@ public sealed class ReceivingTests
             line.Id,
             11,
             createdAt.AddMinutes(5));
-        Action act = () => handler.HandleAsync(command);
+
+        Func<Task> act = async () => await handler.HandleAsync(command);
 
         Console.WriteLine($"Purchase Ordered Quantity: {line.Quantity}, " +
             $"Attempted Received Quantity: {command.QuantityReceived}");
 
-        act.Should().Throw<ArgumentOutOfRangeException>()
+        await act.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("Total Received quantity cannot exceed ordered quantity*");
 
         line.ReceivedQuantity.Should().Be(0);
         purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
+    }
+
+    [Fact]
+    public async Task Multiple_receipts_accumulate()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            10,
+            0,
+            createdAt.AddMinutes(1),
+            new Money(10.00m, new CurrencyCode("USD")));
+        
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+        purchase.Submit(createdAt.AddMinutes(3));
+        purchase.Order(createdAt.AddMinutes(4), "123456");
+        
+        var purchaseRepository = new FakePurchaseRepository
+        {
+            Purchase = purchase
+        };
+        var receiptRepository = new FakeReceiptRepository { };
+        var handler = new RecordReceiptHandler(
+            purchaseRepository,
+            receiptRepository);
+
+        var receipt1 = new RecordReceiptCommand(
+            purchase.Id,
+            line.Id,
+            4,
+            createdAt.AddMinutes(5));
+
+        var receipt2 = new RecordReceiptCommand(
+            purchase.Id,
+            line.Id,
+            3,
+            createdAt.AddMinutes(6));
+
+        await handler.HandleAsync(receipt1);
+
+        await handler.HandleAsync(receipt2);
+
+        line.ReceivedQuantity.Should().Be(7);
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(6));
+    }
+
+    [Fact]
+    public async Task Receiving_the_exact_quantity_ordered_should_complete_the_order()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            10,
+            0,
+            createdAt.AddMinutes(1),
+            new Money(10.00m, new CurrencyCode("USD")));
+
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+        purchase.Submit(createdAt.AddMinutes(3));
+        purchase.Order(createdAt.AddMinutes(4), "123456");
+
+        var purchaseRepository = new FakePurchaseRepository
+        {
+            Purchase = purchase
+        };
+        var receiptRepository = new FakeReceiptRepository { };
+        var handler = new RecordReceiptHandler(
+            purchaseRepository,
+            receiptRepository);
+
+        var receipt1 = new RecordReceiptCommand(
+            purchase.Id,
+            line.Id,
+            10,
+            createdAt.AddMinutes(5));
+
+        await handler.HandleAsync(receipt1);
+
+        line.ReceivedQuantity.Should().Be(10);
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(5));
+        purchase.Status.Should().Be(PurchaseStatus.Completed);
+    }
+
+    [Fact]
+    public async Task Accumulating_the_exact_quantity_ordered_should_complete_the_order()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            10,
+            0,
+            createdAt.AddMinutes(1),
+            new Money(10.00m, new CurrencyCode("USD")));
+
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+        purchase.Submit(createdAt.AddMinutes(3));
+        purchase.Order(createdAt.AddMinutes(4), "123456");
+
+        var purchaseRepository = new FakePurchaseRepository
+        {
+            Purchase = purchase
+        };
+        var receiptRepository = new FakeReceiptRepository { };
+        var handler = new RecordReceiptHandler(
+            purchaseRepository,
+            receiptRepository);
+
+        var receipt1 = new RecordReceiptCommand(
+            purchase.Id,
+            line.Id,
+            4,
+            createdAt.AddMinutes(5));
+
+        var receipt2 = new RecordReceiptCommand(
+            purchase.Id,
+            line.Id,
+            6,
+            createdAt.AddMinutes(6));
+
+        await handler.HandleAsync(receipt1);
+        await handler.HandleAsync(receipt2);
+
+        line.ReceivedQuantity.Should().Be(10);
+        purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(6));
+        purchase.Status.Should().Be(PurchaseStatus.Completed);
     }
 }
