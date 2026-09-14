@@ -16,7 +16,7 @@ public sealed class ReturnToVendor : AggregateRoot
     public ReturnToVendor(Guid purchaseId, DateTimeOffset createdAt)
         : base(createdAt)
     {
-        if (PurchaseId == Guid.Empty)
+        if (purchaseId == Guid.Empty)
             throw new ArgumentException("Return to vendor cannot contain an empty purchase", nameof(PurchaseId));
     
         PurchaseId = purchaseId;
@@ -32,6 +32,9 @@ public sealed class ReturnToVendor : AggregateRoot
             throw new InvalidOperationException("Duplicate lines cannot be added to the same return to vendor.");
         if (_lines.Any(x => x.PurchaseLineId == line.PurchaseLineId))
             throw new InvalidOperationException("Duplicate purchase lines cannot be referenced in the same return to vendor.");
+        if (updatedAt < UpdatedAt)
+            throw new InvalidOperationException("The changed timestamp cannot precede the current updated timestamp.");
+
         UpdatedAt = updatedAt;
         _lines.Add(line);
     }

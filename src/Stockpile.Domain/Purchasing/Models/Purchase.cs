@@ -262,6 +262,9 @@ public sealed class Purchase : AggregateRoot
     {
         var line = _lines.Single(x => x.Id == lineId);
 
+        if (Status != PurchaseStatus.Ordered && Status != PurchaseStatus.Completed)
+            throw new InvalidOperationException("RTVs can only be recorded for ordered purchases.");
+
         if (quantity <= 0)
             throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be greater than zero.");
 
@@ -269,6 +272,8 @@ public sealed class Purchase : AggregateRoot
             throw new InvalidOperationException("Cannot return more than the received quantity.");
 
         line.ReceivedQuantity -= quantity;
+
+        base.MarkUpdated(updatedAt);
 
         if (_lines.Any(x => x.ReceivedQuantity < x.Quantity))
             Status = PurchaseStatus.Ordered;
