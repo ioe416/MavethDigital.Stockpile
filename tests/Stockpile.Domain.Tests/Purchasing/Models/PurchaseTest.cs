@@ -1,5 +1,7 @@
 using FluentAssertions;
 using MavethDigital.Forge.Core.ValueObjects;
+using Stockpile.Application.Purchasing.Receiving.RecordReceipt;
+using Stockpile.Application.Tests.Fakes;
 using Stockpile.Domain.Purchasing.Enums;
 using Stockpile.Domain.Purchasing.Models;
 
@@ -288,6 +290,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             1,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -314,6 +317,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             1,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -339,6 +343,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             1,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -388,6 +393,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             1,
+            0,
             createdAt.AddMinutes(3),
             unitPrice);
 
@@ -422,6 +428,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             1,
+            0,
             createdAt.AddMinutes(3),
             unitPrice);
 
@@ -547,6 +554,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             10,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -557,7 +565,7 @@ public sealed class PurchaseTest
         purchase.Order(createdAt.AddMinutes(4), "123456");
 
         Action act = () => purchase.UpdateQuantity(createdAt.AddMinutes(5), line.Id, 15);
-        
+
         act.Should().Throw<InvalidOperationException>()
             .WithMessage("Quantity cannot be altered on an ordered purchase.");
 
@@ -583,6 +591,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             10,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -620,6 +629,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             10,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -657,6 +667,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             10,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -693,6 +704,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             10,
+            0,
             createdAt.AddMinutes(1),
             null);
 
@@ -726,6 +738,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             partId,
             10,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -764,6 +777,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             partId,
             10,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -804,6 +818,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             partId,
             1,
+            0,
             createdAt.AddMinutes(2),
             new Money(1.25m, new CurrencyCode("USD")));
 
@@ -839,6 +854,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             partId,
             1,
+            0,
             createdAt.AddMinutes(3),
             new Money(1.25m, new CurrencyCode("USD")));
 
@@ -848,9 +864,9 @@ public sealed class PurchaseTest
         purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(5));
         line.UpdatedAt.Should().Be(createdAt.AddMinutes(3));
 
-        Action act  = () => purchase.UpdatePartId(
-            createdAt.AddMinutes(4), 
-            line.Id, 
+        Action act = () => purchase.UpdatePartId(
+            createdAt.AddMinutes(4),
+            line.Id,
             newPartId);
 
         act.Should().Throw<ArgumentOutOfRangeException>();
@@ -876,6 +892,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             partId,
             1,
+            0,
             createdAt.AddMinutes(3),
             new Money(1.25m, new CurrencyCode("USD")));
 
@@ -911,6 +928,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             partId,
             1,
+            0,
             createdAt.AddMinutes(3),
             new Money(1.25m, new CurrencyCode("USD")));
 
@@ -943,6 +961,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             1,
+            0,
             createdAt.AddMinutes(1),
             new Money(1.25m, new CurrencyCode("USD")));
 
@@ -983,6 +1002,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             10,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -1019,6 +1039,7 @@ public sealed class PurchaseTest
         var line = new PurchaseLine(
             Guid.NewGuid(),
             10,
+            0,
             createdAt.AddMinutes(1),
             unitPrice);
 
@@ -1037,5 +1058,53 @@ public sealed class PurchaseTest
         purchase.UpdatedAt.Should().Be(createdAt.AddMinutes(4));
         line.UpdatedAt.Should().Be(createdAt.AddMinutes(1));
         purchase.Lines.Should().Contain(line);
+    }
+
+    [Fact]
+    public async Task Undoing_receipt_should_reduce_received_quantity_on_purchase_line()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var unitPrice = new Money(1.25m, new CurrencyCode("USD"));
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            10,
+            0,
+            createdAt.AddMinutes(1),
+            unitPrice);
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+        purchase.Submit(createdAt.AddMinutes(3));
+        purchase.Order(createdAt.AddMinutes(4), "123456");
+
+        var purchaseRepository = new FakePurchaseRepository
+        {
+            Purchase = purchase
+        };
+        var receiptRepository = new FakeReceiptRepository { };
+        var handler = new RecordReceiptHandler(
+            purchaseRepository,
+            receiptRepository);
+        // Receive all of line1
+        var receipt1 = new RecordReceiptCommand(
+            purchase.Id,
+            line.Id,
+            10,
+            createdAt.AddMinutes(7));
+
+        await handler.HandleAsync(receipt1);
+
+        line.ReceivedQuantity.Should().Be(10);
+
+        purchase.Status.Should().Be(PurchaseStatus.Completed);
+
+        // Undo the receipt
+        purchase.UndoReceipt(line.Id, 10, createdAt.AddMinutes(8));
+
+        line.ReceivedQuantity.Should().Be(0);
     }
 }

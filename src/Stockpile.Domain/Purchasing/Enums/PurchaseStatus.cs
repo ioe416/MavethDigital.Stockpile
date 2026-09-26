@@ -6,5 +6,5 @@ public enum PurchaseStatus
 	Requested,
 	Ordered,
 	Cancelled,
-	Completed
+    Completed
 }

@@ -1,7 +1,4 @@
 ﻿using MavethDigital.Forge.Domain.Models;
-using Stockpile.Domain.Purchasing.Enums;
-using System.Net.NetworkInformation;
-
 
 namespace Stockpile.Domain.Purchasing.Models;
 
@@ -43,5 +40,19 @@ public sealed class Receipt : AggregateRoot
 
         _lines.Add(line);
 
+    }
+
+    public void RemoveLine(
+        DateTimeOffset updatedAt,
+        Guid lineId)
+    {
+        var line = _lines.FirstOrDefault(x => x.Id == lineId);
+        if (line == null)
+            throw new InvalidOperationException(
+                "The specified line does not exist in this receipt.");
+        
+        _lines.Remove(line);
+
+        base.MarkUpdated(updatedAt);
     }
 }

@@ -214,14 +214,68 @@ public sealed class Purchase : AggregateRoot
         Status = PurchaseStatus.Cancelled;
     }
 
-    private void RecalculateStatus()
+    public void RecordReceipt(DateTimeOffset updatedAt, Guid lineId, int receivedQuantity)
     {
+        var existingLine = _lines.SingleOrDefault(x => x.Id == lineId);
+        if (existingLine is null)
+            throw new ArgumentException("A valid purchase line must be selected",
+                nameof(lineId));
+        if (Status != PurchaseStatus.Ordered)
+            throw new InvalidOperationException("Receipts can only be recorded for ordered purchases.");
+        if (updatedAt < UpdatedAt)
+            throw new ArgumentOutOfRangeException("Purchase line updates cannot pre-date purchase updates");
+        
+        existingLine.UpdateReceivedQuantity(updatedAt, receivedQuantity);
+
         if (_lines.All(x => x.ReceivedQuantity == x.Quantity))
         {
             Status = PurchaseStatus.Completed;
-            return;
         }
 
-        Status = PurchaseStatus.Ordered;
+        MarkUpdated(updatedAt);
+    }
+
+    public void UndoReceipt(Guid lineId, int quantity, DateTimeOffset updatedAt)
+    {
+        var existingLine = _lines.SingleOrDefault(x => x.Id == lineId);
+
+        if (quantity <= 0)
+            throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be greater than zero.");
+
+        if (existingLine is null)
+            throw new ArgumentException("A valid receipt line must be selected",
+                nameof(lineId));
+
+        if (quantity > existingLine.ReceivedQuantity)
+            throw new InvalidOperationException("Cannot undo more than the received quantity.");
+
+
+        existingLine.ReceivedQuantity -= quantity;
+
+        base.MarkUpdated(updatedAt);
+
+        if (_lines.Any(x => x.ReceivedQuantity < x.Quantity))
+            Status = PurchaseStatus.Ordered;
+    }
+
+    public void ApplyRtv(Guid lineId, int quantity, DateTimeOffset updatedAt)
+    {
+        var line = _lines.Single(x => x.Id == lineId);
+
+        if (Status != PurchaseStatus.Ordered && Status != PurchaseStatus.Completed)
+            throw new InvalidOperationException("RTVs can only be recorded for ordered purchases.");
+
+        if (quantity <= 0)
+            throw new ArgumentOutOfRangeException(nameof(quantity), "Quantity must be greater than zero.");
+
+        if (line.ReceivedQuantity - quantity < 0)
+            throw new InvalidOperationException("Cannot return more than the received quantity.");
+
+        line.ReceivedQuantity -= quantity;
+
+        base.MarkUpdated(updatedAt);
+
+        if (_lines.Any(x => x.ReceivedQuantity < x.Quantity))
+            Status = PurchaseStatus.Ordered;
     }
 }

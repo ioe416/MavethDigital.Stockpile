@@ -44,13 +44,17 @@ namespace Stockpile.Application.Purchasing.Receiving.RecordReceipt
                 command.QuantityReceived,
                 command.CreatedAt);
 
-            if (purchase.Lines.All(line => line.Id != command.PurchaseLineId))
-                throw new InvalidOperationException("Purchase line not found");
-
             receipt.AddLine(command.CreatedAt, receiptLine);
 
             await _receiptRepository.AddAsync(
                 receipt,
+                cancellationToken);
+
+            await _purchaseRepository.RecordReceipt(
+                purchase.Id,
+                command.PurchaseLineId,
+                command.QuantityReceived,
+                command.CreatedAt,
                 cancellationToken);
 
             return new RecordReceiptResult(receipt.Id);
