@@ -213,4 +213,15 @@ public sealed class Purchase : AggregateRoot
 
         Status = PurchaseStatus.Cancelled;
     }
+
+    private void RecalculateStatus()
+    {
+        if (_lines.All(x => x.ReceivedQuantity == x.Quantity))
+        {
+            Status = PurchaseStatus.Completed;
+            return;
+        }
+
+        Status = PurchaseStatus.Ordered;
+    }
 }
