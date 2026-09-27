@@ -227,10 +227,7 @@ public sealed class Purchase : AggregateRoot
         
         existingLine.UpdateReceivedQuantity(updatedAt, receivedQuantity);
 
-        if (_lines.All(x => x.ReceivedQuantity == x.Quantity))
-        {
-            Status = PurchaseStatus.Completed;
-        }
+        RecalculateStatus();
 
         MarkUpdated(updatedAt);
     }
@@ -254,8 +251,7 @@ public sealed class Purchase : AggregateRoot
 
         base.MarkUpdated(updatedAt);
 
-        if (_lines.Any(x => x.ReceivedQuantity < x.Quantity))
-            Status = PurchaseStatus.Ordered;
+        RecalculateStatus();
     }
 
     public void ApplyRtv(Guid lineId, int quantity, DateTimeOffset updatedAt)
@@ -275,7 +271,17 @@ public sealed class Purchase : AggregateRoot
 
         base.MarkUpdated(updatedAt);
 
-        if (_lines.Any(x => x.ReceivedQuantity < x.Quantity))
-            Status = PurchaseStatus.Ordered;
+        RecalculateStatus();
+    }
+
+    private void RecalculateStatus()
+    {
+        if (_lines.All(x => x.ReceivedQuantity == x.Quantity))
+        {
+            Status = PurchaseStatus.Completed;
+            return;
+        }
+
+        Status = PurchaseStatus.Ordered;
     }
 }

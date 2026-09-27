@@ -237,5 +237,109 @@ public sealed class RtvTests
             .WithMessage("The changed timestamp cannot precede the current updated timestamp.*");
     }
 
+    [Fact]
+    public void Purchase_should_reopen_when_any_completed_line_is_returned_to_vendorte()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+        var line1 = new PurchaseLine(
+            Guid.NewGuid(),
+            10,
+            0,
+            createdAt.AddMinutes(1),
+            new Money(10.00m, new CurrencyCode("USD")));
+        var line2 = new PurchaseLine(
+            Guid.NewGuid(),
+            5,
+            0,
+            createdAt.AddMinutes(2),
+            new Money(5.00m, new CurrencyCode("USD")));
+        purchase.AddLine(createdAt.AddMinutes(3), line1);
+        purchase.AddLine(createdAt.AddMinutes(4), line2);
+        purchase.Submit(createdAt.AddMinutes(5));
+        purchase.Order(createdAt.AddMinutes(6), "PO123");
+        // Receive full quantity for both lines
+        purchase.RecordReceipt(createdAt.AddMinutes(7), line1.Id, 10);
+        purchase.RecordReceipt(createdAt.AddMinutes(8), line2.Id, 5);
+        purchase.Status.Should().Be(PurchaseStatus.Completed);
+        // Return some quantity for both lines
+        purchase.ApplyRtv(line1.Id, 2, createdAt.AddMinutes(9));
+        line1.ReceivedQuantity.Should().Be(8);
+        line2.ReceivedQuantity.Should().Be(5);
+        // After RTVs, the purchase should be reopened
+        purchase.Status.Should().Be(PurchaseStatus.Ordered);
+    }
+
+    [Fact]
+    public void Purchase_should_not_complete_until_all_lines_are_fully_received()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+        var line1 = new PurchaseLine(
+            Guid.NewGuid(),
+            10,
+            0,
+            createdAt.AddMinutes(1),
+            new Money(10.00m, new CurrencyCode("USD")));
+        var line2 = new PurchaseLine(
+            Guid.NewGuid(),
+            5,
+            0,
+            createdAt.AddMinutes(2),
+            new Money(5.00m, new CurrencyCode("USD")));
+        purchase.AddLine(createdAt.AddMinutes(3), line1);
+        purchase.AddLine(createdAt.AddMinutes(4), line2);
+        purchase.Submit(createdAt.AddMinutes(5));
+        purchase.Order(createdAt.AddMinutes(6), "PO123");
+        // Receive full quantity for line1 and partial for line2
+        purchase.RecordReceipt(createdAt.AddMinutes(7), line1.Id, 10);
+        purchase.RecordReceipt(createdAt.AddMinutes(8), line2.Id, 4);
+        // The purchase should not be completed yet
+        line1.ReceivedQuantity.Should().Be(10);
+        line2.ReceivedQuantity.Should().Be(4);
+        line1.OutstandingQuantity.Should().Be(0);
+        line2.OutstandingQuantity.Should().Be(1);
+        purchase.Status.Should().Be(PurchaseStatus.Ordered);
+    }
+
+    [Fact]
+    public void Purchase_should_reopen_when_undoing_receipt_makes_a_line_incomplete()
+    {
+        var createdAt = DateTimeOffset.UtcNow;
+        var purchase = new Purchase(
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            Guid.NewGuid(),
+            createdAt,
+            null);
+        var line = new PurchaseLine(
+            Guid.NewGuid(),
+            10,
+            0,
+            createdAt.AddMinutes(1),
+            new Money(10.00m, new CurrencyCode("USD")));
+        purchase.AddLine(createdAt.AddMinutes(2), line);
+        purchase.Submit(createdAt.AddMinutes(3));
+        purchase.Order(createdAt.AddMinutes(4), "PO123");
+        // Receive full quantity
+        purchase.RecordReceipt(createdAt.AddMinutes(5), line.Id, 10);
+        purchase.Status.Should().Be(PurchaseStatus.Completed);
+        // Undo receipt of 5 units
+        purchase.UndoReceipt(line.Id, 5, createdAt.AddMinutes(6));
+        // After undoing receipt, the purchase should be reopened
+        purchase.Status.Should().Be(PurchaseStatus.Ordered);
+        line.ReceivedQuantity.Should().Be(5);
+        line.OutstandingQuantity.Should().Be(5);
+    }
 
 }
