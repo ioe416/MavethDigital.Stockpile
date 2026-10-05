@@ -1,4 +1,8 @@
 <Solution>
+  <Folder Name="/docs/" />
+  <Folder Name="/docs/architecture/">
+    <File Path="domain-descisions.md" />
+  </Folder>
   <Folder Name="/src/">
     <Project Path="src/Stockpile.Domain/Stockpile.Domain.csproj" />
     <Project Path="Stockpile.Application/Stockpile.Application.csproj" Id="7919d135-3195-408f-9472-0f5d8323b925" />

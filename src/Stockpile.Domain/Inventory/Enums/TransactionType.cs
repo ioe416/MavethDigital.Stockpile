@@ -5,6 +5,8 @@ public enum TransactionType
 {
     Receipt,
     Issue,
+    Allocate,
+    Deallocate,
     Return,
     Adjustment,
     RTV,
