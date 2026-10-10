@@ -42,9 +42,20 @@ public sealed class ReceivingTests
 
         var receiptRepository = new FakeReceiptRepository { };
 
+        var inventory = new InventoryItem(
+            line.PartId,
+            onHandQuantity: 0,
+            allocatedQuantity: 0,
+            minimumQuantity: 5,
+            reorderQuantity: 10,
+            createdAt);
+
         var inventoryRepository =
             new FakeInventoryRepository(
-                new List<InventoryItem>());
+                new List<InventoryItem>
+                {
+                    inventory
+                });
 
         var handler = new RecordReceiptHandler(
             purchaseRepository,
@@ -188,10 +199,21 @@ public sealed class ReceivingTests
             Purchase = purchase
         };
         var receiptRepository = new FakeReceiptRepository { };
-        
+
+        var inventory = new InventoryItem(
+            line.PartId,
+            onHandQuantity: 0,
+            allocatedQuantity: 0,
+            minimumQuantity: 5,
+            reorderQuantity: 10,
+            createdAt);
+
         var inventoryRepository =
             new FakeInventoryRepository(
-                new List<InventoryItem>());
+                new List<InventoryItem>
+                {
+                    inventory
+                });
 
         var handler = new RecordReceiptHandler(
             purchaseRepository,
@@ -239,9 +261,20 @@ public sealed class ReceivingTests
         };
         var receiptRepository = new FakeReceiptRepository { };
 
+        var inventory = new InventoryItem(
+            line.PartId,
+            onHandQuantity: 0,
+            allocatedQuantity: 0,
+            minimumQuantity: 5,
+            reorderQuantity: 10,
+            createdAt);
+
         var inventoryRepository =
             new FakeInventoryRepository(
-                new List<InventoryItem>());
+                new List<InventoryItem>
+                {
+                    inventory
+                });
 
         var handler = new RecordReceiptHandler(
             purchaseRepository,
@@ -338,9 +371,20 @@ public sealed class ReceivingTests
         };
         var receiptRepository = new FakeReceiptRepository { };
 
+        var inventory = new InventoryItem(
+            line.PartId,
+            onHandQuantity: 0,
+            allocatedQuantity: 0,
+            minimumQuantity: 5,
+            reorderQuantity: 10,
+            createdAt);
+
         var inventoryRepository =
             new FakeInventoryRepository(
-                new List<InventoryItem>());
+                new List<InventoryItem>
+                {
+                    inventory
+                });
 
         var handler = new RecordReceiptHandler(
             purchaseRepository,
@@ -394,9 +438,20 @@ public sealed class ReceivingTests
         };
         var receiptRepository = new FakeReceiptRepository { };
 
+        var inventory = new InventoryItem(
+            line.PartId,
+            onHandQuantity: 0,
+            allocatedQuantity: 0,
+            minimumQuantity: 5,
+            reorderQuantity: 10,
+            createdAt);
+
         var inventoryRepository =
             new FakeInventoryRepository(
-                new List<InventoryItem>());
+                new List<InventoryItem>
+                {
+                    inventory
+                });
 
         var handler = new RecordReceiptHandler(
             purchaseRepository,
@@ -443,9 +498,20 @@ public sealed class ReceivingTests
         };
         var receiptRepository = new FakeReceiptRepository { };
 
+        var inventory = new InventoryItem(
+            line.PartId,
+            onHandQuantity: 0,
+            allocatedQuantity: 0,
+            minimumQuantity: 5,
+            reorderQuantity: 10,
+            createdAt);
+
         var inventoryRepository =
             new FakeInventoryRepository(
-                new List<InventoryItem>());
+                new List<InventoryItem>
+                {
+                    inventory
+                });
 
         var handler = new RecordReceiptHandler(
             purchaseRepository,
@@ -482,24 +548,38 @@ public sealed class ReceivingTests
             Guid.NewGuid(),
             createdAt,
             null);
+
         var line = new PurchaseLine(
             Guid.NewGuid(),
             10,
             0,
             createdAt.AddMinutes(1),
             new Money(10.00m, new CurrencyCode("USD")));
+
         purchase.AddLine(createdAt.AddMinutes(2), line);
         purchase.Submit(createdAt.AddMinutes(3));
         purchase.Order(createdAt.AddMinutes(4), "123456");
+
         var purchaseRepository = new FakePurchaseRepository
         {
             Purchase = purchase
         };
         var receiptRepository = new FakeReceiptRepository { };
 
+        var inventory = new InventoryItem(
+            line.PartId,
+            onHandQuantity: 0,
+            allocatedQuantity: 0,
+            minimumQuantity: 5,
+            reorderQuantity: 10,
+            createdAt);
+
         var inventoryRepository =
             new FakeInventoryRepository(
-                new List<InventoryItem>());
+                new List<InventoryItem>
+                {
+                    inventory
+                });
 
         var handler = new RecordReceiptHandler(
             purchaseRepository,
@@ -516,8 +596,10 @@ public sealed class ReceivingTests
             line.Id,
             5, // This will exceed the ordered quantity
             createdAt.AddMinutes(6));
+
         Func<Task> act1 = async () => await handler.HandleAsync(receipt1);
         Func<Task> act2 = async () => await handler.HandleAsync(receipt2);
+
         await act1.Should().NotThrowAsync();
         await act2.Should().ThrowAsync<InvalidOperationException>()
             .WithMessage("Total Received quantity cannot exceed ordered quantity*");
@@ -764,19 +846,39 @@ public sealed class ReceivingTests
             0,
             createdAt.AddMinutes(2),
             new Money(20.00m, new CurrencyCode("USD")));
+
         purchase.AddLine(createdAt.AddMinutes(3), line1);
         purchase.AddLine(createdAt.AddMinutes(4), line2);
         purchase.Submit(createdAt.AddMinutes(5));
         purchase.Order(createdAt.AddMinutes(6), "123456");
+
         var purchaseRepository = new FakePurchaseRepository
         {
             Purchase = purchase
         };
-        var receiptRepository = new FakeReceiptRepository { };
 
         var inventoryRepository =
             new FakeInventoryRepository(
-                new List<InventoryItem>());
+                new List<InventoryItem>
+                {
+                    new InventoryItem(
+                        line1.PartId,
+                        onHandQuantity: 0,
+                        allocatedQuantity: 0,
+                        minimumQuantity: 5,
+                        reorderQuantity: 10,
+                        createdAt),
+
+                    new InventoryItem(
+                        line2.PartId,
+                        onHandQuantity: 0,
+                        allocatedQuantity: 0,
+                        minimumQuantity: 5,
+                        reorderQuantity: 10,
+                        createdAt),
+                });
+
+        var receiptRepository = new FakeReceiptRepository { };
 
         var handler = new RecordReceiptHandler(
             purchaseRepository,
@@ -790,6 +892,7 @@ public sealed class ReceivingTests
             10,
             createdAt.AddMinutes(7));
         await handler.HandleAsync(receipt1);
+
         purchase.Status.Should().Be(PurchaseStatus.Ordered); // Still not complete
         // Receive all of line2
         var receipt2 = new RecordReceiptCommand(
@@ -826,11 +929,23 @@ public sealed class ReceivingTests
         {
             Purchase = purchase
         };
+
         var receiptRepository = new FakeReceiptRepository { };
+
+        var inventory = new InventoryItem(
+            line.PartId,
+            onHandQuantity: 0,
+            allocatedQuantity: 0,
+            minimumQuantity: 5,
+            reorderQuantity: 10,
+            createdAt);
 
         var inventoryRepository =
             new FakeInventoryRepository(
-                new List<InventoryItem>());
+                new List<InventoryItem>
+                {
+                    inventory
+                });
 
         var handler = new RecordReceiptHandler(
             purchaseRepository,
