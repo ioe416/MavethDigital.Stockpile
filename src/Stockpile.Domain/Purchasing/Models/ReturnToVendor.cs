@@ -5,10 +5,8 @@ namespace Stockpile.Domain.Purchasing.Models;
 
 public sealed class ReturnToVendor : AggregateRoot
 {
-    public Guid Id { get; }
     public Guid PurchaseId { get; }
-    public DateTimeOffset CreatedAt { get; }
-    public DateTimeOffset UpdatedAt { get; private set; }
+
     private readonly List<RtvLine> _lines = new();
 
     public IReadOnlyCollection<RtvLine> Lines => _lines.AsReadOnly();
@@ -20,8 +18,6 @@ public sealed class ReturnToVendor : AggregateRoot
             throw new ArgumentException("Return to vendor cannot contain an empty purchase", nameof(PurchaseId));
     
         PurchaseId = purchaseId;
-        CreatedAt = createdAt;
-        UpdatedAt = createdAt;
     }
 
     public void AddLine(DateTimeOffset updatedAt, RtvLine line)
@@ -35,7 +31,8 @@ public sealed class ReturnToVendor : AggregateRoot
         if (updatedAt < UpdatedAt)
             throw new InvalidOperationException("The changed timestamp cannot precede the current updated timestamp.");
 
-        UpdatedAt = updatedAt;
+        base.MarkUpdated(updatedAt);
+
         _lines.Add(line);
     }
 }
