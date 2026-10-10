@@ -7,13 +7,16 @@ namespace Stockpile.Application.Purchasing.Receiving.RecordReceipt
     {
         private readonly IPurchaseRepository _purchaseRepository;
         private readonly IReceiptRepository _receiptRepository;
+        private readonly IInventoryRepository _inventoryRepository;
 
         public RecordReceiptHandler(
             IPurchaseRepository purchaseRepository,
-            IReceiptRepository receiptRepository)
+            IReceiptRepository receiptRepository,
+            IInventoryRepository inventoryRepository)
         {
             _purchaseRepository = purchaseRepository;
             _receiptRepository = receiptRepository;
+            _inventoryRepository = inventoryRepository;
         }
 
         public async Task<RecordReceiptResult> HandleAsync(
@@ -55,6 +58,25 @@ namespace Stockpile.Application.Purchasing.Receiving.RecordReceipt
                 command.PurchaseLineId,
                 command.QuantityReceived,
                 command.CreatedAt,
+                cancellationToken);
+
+            var inventory =
+                await _inventoryRepository.GetByPartIdAsync(
+                    purchaseLine.PartId,
+                    cancellationToken);
+
+            if (inventory is null)
+            {
+                throw new InvalidOperationException(
+                    $"Inventory item not found for part {purchaseLine.PartId}");
+            }
+
+            inventory.Receive(
+                command.QuantityReceived,
+                command.CreatedAt);
+
+            await _inventoryRepository.UpdateAsync(
+                inventory,
                 cancellationToken);
 
             return new RecordReceiptResult(receipt.Id);
